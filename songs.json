@@ -1,12 +1,5 @@
 {
-  "qr001": { "file": "songs/skyfall.mp3" },
-  "qr002": { "file": "songs/flowers.mp3" },
-  "qr003": { "file": "songs/angels.mp3" },
-  "qr004": { "file": "songs/nummer4.mp3" },
-  "qr005": { "file": "songs/nummer5.mp3" },
-  "qr006": { "file": "songs/nummer6.mp3" },
-  "qr007": { "file": "songs/nummer7.mp3" },
-  "qr008": { "file": "songs/nummer8.mp3" },
-  "qr009": { "file": "songs/nummer9.mp3" },
-  "qr010": { "file": "songs/nummer10.mp3" }
+  "qr001": { "file": "songs/song1.mp3" },
+  "qr002": { "file": "songs/song2.mp3" },
+  "qr003": { "file": "songs/song3.mp3" }
 }
