@@ -93,100 +93,139 @@ function startApp() {
 }
 
 // === QR SCANNER ===
+// Supports BOTH normal (zwart op wit) and inverted (wit op donker) QR codes.
+// Strategy: start the camera stream zelf via getUserMedia, trek frames naar een
+// hidden canvas, scan die normaal én geïnverteerd elke ~100ms met jsQR.
+
+let cameraStream = null;
+let scanLoopActive = false;
+let scanCanvas = null;
+let scanCtx = null;
+let scanVideo = null;
+
 async function startScanning() {
   if (isScanning) return;
 
   const readerEl = document.getElementById('reader');
   if (!readerEl) return;
 
-  // Clear previous instance
   readerEl.innerHTML = '';
-
   setScanStatus('Camera wordt gestart…');
 
+  // Lazy-load jsQR (lightweight, works with inverted QR via invert option)
+  await loadJsQR();
+
   try {
-    html5QrCode = new Html5Qrcode('reader');
+    // Request camera
+    cameraStream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        facingMode: { ideal: 'environment' },
+        width: { ideal: 640 },
+        height: { ideal: 640 },
+      },
+      audio: false,
+    });
 
-    const config = {
-      fps: 15,
-      qrbox: { width: 220, height: 220 },
-      aspectRatio: 1.0,
-      showTorchButtonIfSupported: false,
-      showZoomSliderIfSupported: false,
-      defaultZoomValueIfSupported: 1,
-      // Disable built-in UI chrome
-      disableFlip: false,
-      rememberLastUsedCamera: true,
-    };
+    // Create video element inside #reader
+    scanVideo = document.createElement('video');
+    scanVideo.setAttribute('playsinline', '');
+    scanVideo.setAttribute('autoplay', '');
+    scanVideo.setAttribute('muted', '');
+    scanVideo.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:18px;display:block;';
+    readerEl.appendChild(scanVideo);
 
-    await html5QrCode.start(
-      { facingMode: 'environment' },
-      config,
-      onQrSuccess,
-      onQrError
-    );
+    scanVideo.srcObject = cameraStream;
+    await scanVideo.play();
+
+    // Hidden canvas for frame processing
+    scanCanvas = document.createElement('canvas');
+    scanCanvas.width = 640;
+    scanCanvas.height = 640;
+    scanCtx = scanCanvas.getContext('2d', { willReadFrequently: true });
 
     isScanning = true;
+    scanLoopActive = true;
     setScanStatus('Houd de QR-code voor de camera');
 
-    // Hide html5-qrcode default header/footer elements
-    cleanupScannerUI();
+    requestAnimationFrame(scanLoop);
 
   } catch (err) {
     console.error('[Scanner] Could not start:', err);
     isScanning = false;
+    scanLoopActive = false;
 
-    if (err.name === 'NotAllowedError' || String(err).includes('NotAllowedError')) {
-      setScanStatus('Cameratoegang geweigerd. Geef toestemming in je instellingen.');
-    } else if (err.name === 'NotFoundError' || String(err).includes('NotFoundError')) {
-      setScanStatus('Geen camera gevonden op dit apparaat.');
+    const msg = String(err);
+    if (msg.includes('NotAllowedError') || msg.includes('Permission')) {
+      setScanStatus('⚠️ Cameratoegang geweigerd. Geef toestemming in je instellingen.');
+    } else if (msg.includes('NotFoundError')) {
+      setScanStatus('⚠️ Geen camera gevonden op dit apparaat.');
     } else {
-      setScanStatus('Camera kon niet starten. Probeer opnieuw.');
+      setScanStatus('⚠️ Camera kon niet starten. Probeer opnieuw.');
     }
   }
 }
 
-function cleanupScannerUI() {
-  // Remove extra UI elements added by html5-qrcode library
-  setTimeout(() => {
-    const reader = document.getElementById('reader');
-    if (!reader) return;
+// Load jsQR dynamically (small lib, ~26kb, handles inverted QR natively)
+function loadJsQR() {
+  return new Promise((resolve, reject) => {
+    if (window.jsQR) { resolve(); return; }
+    const s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js';
+    s.onload = resolve;
+    s.onerror = reject;
+    document.head.appendChild(s);
+  });
+}
 
-    // Hide default UI elements the library adds
-    const selectors = [
-      '#reader__dashboard',
-      '#reader__dashboard_section',
-      '#reader__dashboard_section_csr',
-      '#reader__header_message',
-      '#reader__status_span',
-      '#reader__camera_selection',
-      'select',
-      'button:not(#playpause-btn):not(.btn):not(.back-btn):not(.btn-playing)',
-    ];
+// Frame scanning loop — checks normal AND inverted every frame
+function scanLoop() {
+  if (!scanLoopActive || !scanVideo || scanVideo.readyState < 2) {
+    if (scanLoopActive) requestAnimationFrame(scanLoop);
+    return;
+  }
 
-    selectors.forEach(sel => {
-      reader.querySelectorAll(sel).forEach(el => {
-        el.style.display = 'none';
-        el.style.visibility = 'hidden';
-      });
-    });
-  }, 500);
+  const vw = scanVideo.videoWidth;
+  const vh = scanVideo.videoHeight;
+  if (!vw || !vh) {
+    if (scanLoopActive) requestAnimationFrame(scanLoop);
+    return;
+  }
+
+  // Draw current video frame to canvas
+  scanCanvas.width = vw;
+  scanCanvas.height = vh;
+  scanCtx.drawImage(scanVideo, 0, 0, vw, vh);
+
+  const imageData = scanCtx.getImageData(0, 0, vw, vh);
+
+  // 1. Try normal scan
+  let result = window.jsQR(imageData.data, vw, vh, {
+    inversionAttempts: 'attemptBoth', // ← this is the key: tries both normal and inverted
+  });
+
+  if (result && result.data) {
+    onQrSuccess(result.data);
+    return; // Stop loop after success
+  }
+
+  if (scanLoopActive) requestAnimationFrame(scanLoop);
 }
 
 function onQrSuccess(decodedText) {
+  if (!isScanning) return; // Prevent double-trigger
+
   const key = decodedText.trim().toLowerCase();
   console.log('[Scanner] QR detected:', key);
 
   const song = songDatabase[key];
 
   if (!song) {
-    setScanStatus(`Onbekende kaart: "${decodedText}"`);
-    // Brief vibration feedback
+    setScanStatus(`❓ Onbekende kaart: "${decodedText}"`);
     if (navigator.vibrate) navigator.vibrate(50);
     return;
   }
 
-  // Haptic + stop scanner
+  // Haptic feedback + stop scanner
   if (navigator.vibrate) navigator.vibrate([30, 50, 30]);
   stopScannerOnly();
 
@@ -195,22 +234,33 @@ function onQrSuccess(decodedText) {
   playAudio(song.file, key);
 }
 
-function onQrError(errorMessage) {
-  // Suppress continuous scan errors (normal when no QR in view)
+function stopCameraStream() {
+  scanLoopActive = false;
+  if (cameraStream) {
+    cameraStream.getTracks().forEach(t => t.stop());
+    cameraStream = null;
+  }
+  if (scanVideo) {
+    scanVideo.srcObject = null;
+    scanVideo = null;
+  }
+  scanCtx = null;
+  scanCanvas = null;
 }
 
 async function stopScannerOnly() {
-  if (!html5QrCode) return;
   isScanning = false;
-  try {
-    const state = html5QrCode.getState();
-    if (state === Html5QrcodeScannerState.SCANNING || state === Html5QrcodeScannerState.PAUSED) {
-      await html5QrCode.stop();
-    }
-  } catch (err) {
-    // Ignore stop errors
+  stopCameraStream();
+
+  // Also stop html5QrCode if somehow still running
+  if (html5QrCode) {
+    try { await html5QrCode.stop(); } catch (_) {}
+    html5QrCode = null;
   }
-  html5QrCode = null;
+
+  // Clear the reader element
+  const readerEl = document.getElementById('reader');
+  if (readerEl) readerEl.innerHTML = '';
 }
 
 async function stopScanning() {
@@ -338,6 +388,6 @@ function setupAudioListeners() {
   audioPlayer.addEventListener('error', (e) => {
     console.error('[Audio] Error loading file:', e);
     const label = document.getElementById('now-playing-label');
-    if (label) label.textContent = 'Bestand niet gevonden';
+    if (label) label.textContent = '⚠️ Bestand niet gevonden';
   });
 }
