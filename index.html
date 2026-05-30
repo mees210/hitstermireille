@@ -3,229 +3,198 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <meta name="description" content="Alle favoriete nummers van Mireille in één Hitster spel!" />
-
-  <!-- PWA Meta Tags -->
-  <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Hitster" />
+  <meta name="mobile-web-app-capable" content="yes" />
   <meta name="theme-color" content="#000000" />
-  <meta name="msapplication-TileColor" content="#000000" />
 
   <title>Hitster</title>
 
-  <!-- PWA Manifest -->
   <link rel="manifest" href="manifest.json" />
-
-  <!-- Apple Touch Icons -->
   <link rel="apple-touch-icon" href="assets/icon-192.png" />
-  <link rel="icon" type="image/png" sizes="512x512" href="assets/icon-512.png" />
   <link rel="icon" type="image/png" sizes="192x192" href="assets/icon-192.png" />
 
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet" />
 
-  <!-- FontAwesome voor iconen -->
+  <!-- FontAwesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
 
-  <!-- HTML5 QR Code Scanner -->
+  <!-- Html5-QRCode library -->
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
-  <!-- Stylesheet -->
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
-  <!-- LAAD SCHERM -->
-  <div id="loading-overlay" class="loading-overlay">
-    <div class="loading-spinner"></div>
-    <div class="loading-text">HITSTER</div>
+  <!-- Rotatie-overlay -->
+  <div id="rotate-overlay">
+    <div class="rotate-content">
+      <div class="rotate-icon">
+        <i class="fa-solid fa-rotate"></i>
+      </div>
+      <p class="rotate-title">Draai je scherm</p>
+      <p class="rotate-sub">Hitster werkt alleen in portretmodus</p>
+    </div>
   </div>
 
-  <!-- TOAST NOTIFICATIE -->
-  <div id="toast" class="toast"></div>
-
-  <!-- ============================================
-       SCHERM 1: HOME
-       ============================================ -->
-  <div id="home" class="screen">
-
-    <!-- Titel sectie -->
-    <div class="title-area" style="text-align: center;">
-      <h1 class="app-title">Hitster</h1>
-      <p class="app-subtitle">Alle favoriete nummers van Mireille in één Hitster spel!</p>
-    </div>
-
-    <!-- Logo -->
-    <div class="logo-container">
-      <img src="assets/homelogo.png" alt="Hitster Logo" />
-    </div>
-
-    <!-- Knoppen -->
-    <div class="btn-group">
-      <button class="btn btn-primary" onclick="startApp()">
-        <i class="fa-solid fa-qrcode"></i>
-        Start Spel
-      </button>
-      <button class="btn btn-ghost" onclick="showScreen('rules')">
-        <i class="fa-solid fa-book-open"></i>
-        Spelregels
-      </button>
-    </div>
-
-  </div><!-- /home -->
-
-
-  <!-- ============================================
-       SCHERM 2: SCANNER
-       ============================================ -->
-  <div id="scanner" class="screen hidden">
-
-    <!-- Titel -->
-    <h2 class="screen-title" style="font-family: 'Bebas Neue', cursive; font-size: 40px; letter-spacing: 2px;">
-      Scan Kaart
-    </h2>
-
-    <!-- Scan vlak -->
-    <div class="scan-area">
-      <div id="reader">
-        <div class="scan-line"></div>
+  <!-- HOME SCHERM -->
+  <div id="home" class="screen active">
+    <div class="screen-inner">
+      <div class="top-section">
+        <h1 class="main-title">Hitster</h1>
+        <p class="subtitle">Alle favoriete nummers van Mireille<br />in één Hitster spel!</p>
       </div>
-      <!-- Hoekmarkering decoraties -->
-      <div class="scan-corner tl"></div>
-      <div class="scan-corner tr"></div>
-      <div class="scan-corner bl"></div>
-      <div class="scan-corner br"></div>
-    </div>
-    <p class="scan-hint">Richt de camera op de QR-code van je kaart</p>
 
-    <!-- Knoppen -->
-    <div class="btn-group">
-      <button class="btn btn-ghost" onclick="stopScanningAndGoHome()">
-        <i class="fa-solid fa-xmark"></i>
-        Stop Scannen
-      </button>
-    </div>
-
-  </div><!-- /scanner -->
-
-
-  <!-- ============================================
-       SCHERM 3: AFSPELEN
-       ============================================ -->
-  <div id="playing" class="screen hidden">
-
-    <!-- Titel -->
-    <h2 class="screen-title" style="font-family: 'Bebas Neue', cursive; font-size: 40px; letter-spacing: 2px;">
-      Nu op de speaker
-    </h2>
-
-    <!-- Afspeel visueel -->
-    <div>
-      <div class="afspeelvierkant">
-        <!-- Animatie achtergrond -->
-        <div class="afspeelcirkel-bg">
-          <img src="assets/afspeelcirkel.gif" alt="" aria-hidden="true" />
+      <div class="middle-section">
+        <div class="logo-container">
+          <img src="assets/homelogo.png" alt="Hitster Logo" class="home-logo" />
         </div>
+      </div>
 
-        <!-- Play/Pause knop -->
-        <button class="btn-playing" onclick="togglePlayPause()" aria-label="Afspelen of pauzeren">
-          <i id="play-icon" class="fa-solid fa-pause"></i>
+      <div class="bottom-section">
+        <button class="btn btn-primary" onclick="startApp()">
+          <i class="fa-solid fa-qrcode"></i> Start Spel
+        </button>
+        <button class="btn btn-ghost" onclick="showScreen('rules')">
+          <i class="fa-solid fa-book-open"></i> Spelregels
         </button>
       </div>
+    </div>
+  </div>
 
-      <div class="song-info">
-        <p>Tik om te pauzeren</p>
+  <!-- SCANNER SCHERM -->
+  <div id="scanner" class="screen hidden">
+    <div class="screen-inner">
+      <div class="top-section">
+        <h2 class="screen-title">Scan Kaart</h2>
+        <p class="screen-sub">Houd de QR-code voor de camera</p>
+      </div>
+
+      <div class="middle-section">
+        <div class="scan-frame-wrapper">
+          <div class="scan-corner tl"></div>
+          <div class="scan-corner tr"></div>
+          <div class="scan-corner bl"></div>
+          <div class="scan-corner br"></div>
+          <div id="reader"></div>
+          <div class="scan-line"></div>
+        </div>
+        <p id="scan-status" class="scan-status">Camera wordt gestart…</p>
+      </div>
+
+      <div class="bottom-section">
+        <button class="btn btn-danger" onclick="stopScanning()">
+          <i class="fa-solid fa-xmark"></i> Stop Scannen
+        </button>
       </div>
     </div>
+  </div>
 
-    <!-- Knoppen -->
-    <div class="btn-group">
-      <button class="btn btn-primary" onclick="goToScanner()">
-        <i class="fa-solid fa-qrcode"></i>
-        Volgend nummer
-      </button>
-      <button class="btn btn-ghost" onclick="backToHome()">
-        <i class="fa-solid fa-house"></i>
-        Hoofdmenu
-      </button>
+  <!-- AFSPEEL SCHERM -->
+  <div id="playing" class="screen hidden">
+    <div class="screen-inner">
+      <div class="top-section">
+        <h2 class="screen-title">Nu op de speaker</h2>
+        <p id="now-playing-label" class="screen-sub">Nummer speelt…</p>
+      </div>
+
+      <div class="middle-section">
+        <div class="afspeelvierkant">
+          <img src="assets/afspeelcirkel.gif" alt="Visualizer" class="afspeelcirkel" id="play-visual" />
+          <button class="btn-playing" id="playpause-btn" onclick="togglePlayPause()">
+            <i id="play-icon" class="fa-solid fa-pause"></i>
+          </button>
+        </div>
+
+        <div class="progress-wrap">
+          <div class="progress-bar">
+            <div class="progress-fill" id="progress-fill"></div>
+          </div>
+          <div class="time-labels">
+            <span id="time-current">0:00</span>
+            <span id="time-total">0:00</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="bottom-section">
+        <button class="btn btn-primary" onclick="goToScanner()">
+          <i class="fa-solid fa-forward"></i> Volgend nummer
+        </button>
+        <button class="btn btn-ghost" onclick="goHome()">
+          <i class="fa-solid fa-house"></i> Hoofdmenu
+        </button>
+      </div>
     </div>
+  </div>
 
-  </div><!-- /playing -->
-
-
-  <!-- ============================================
-       SCHERM 4: SPELREGELS
-       ============================================ -->
+  <!-- SPELREGELS SCHERM -->
   <div id="rules" class="screen hidden">
-
-    <!-- Titel -->
-    <h2 class="screen-title" style="font-family: 'Bebas Neue', cursive; font-size: 50px; letter-spacing: 2px;">
-      Spelregels
-    </h2>
-
-    <!-- Scrollbare inhoud -->
-    <div class="rules-content">
-
-      <h3>Doel van het spel</h3>
-      <p>
-        Zet alle nummers op de juiste plek in jouw persoonlijke muziek-tijdlijn!
-        Wie als eerste zijn kaarten in de <strong>juiste chronologische volgorde</strong>
-        heeft liggen, wint het spel.
-      </p>
-
-      <h3>Voorbereiding</h3>
-      <ul>
-        <li>Verdeel alle speelkaarten gelijk over de spelers.</li>
-        <li>Iedere speler legt zijn <strong>eerste kaart</strong> open voor zich — dit is het startpunt van je tijdlijn.</li>
-        <li>De overige kaarten blijven ondersteboven, je ziet alleen de QR-code.</li>
-      </ul>
-
-      <h3>Spelverloop</h3>
-      <ul>
-        <li>De jongste speler begint. Daarna gaat het met de klok mee.</li>
-        <li>Pak je bovenste kaart en <strong>scan de QR-code</strong> met de app.</li>
-        <li>Luister goed naar het fragment van maximaal <strong>30 seconden</strong>.</li>
-        <li>Leg de kaart op de plek in je tijdlijn waarvan jij denkt dat die klopt (eerder of later dan een ander nummer).</li>
-      </ul>
-
-      <h3>Goed of Fout?</h3>
-      <p>
-        Keer je kaart om en kijk naar het jaar. Staat de kaart op de
-        <strong>juiste plek</strong> in je tijdlijn? Dan mag je hem houden!
-        Staat hij fout? Dan gaat hij uit het spel.
-      </p>
-
-      <h3>Winnen</h3>
-      <p>
-        De eerste speler die <strong>vijf kaarten</strong> correct in zijn tijdlijn heeft liggen,
-        wint het spel. Bij gelijkstand wint de speler met de langste aaneengesloten
-        correcte reeks.
-      </p>
-
-      <div class="tip">
-        <strong>Tip:</strong> Ken je het nummer niet? Let dan op het genre, de stijl en het geluid.
-        Dat kan je al heel ver brengen!
+    <div class="screen-inner rules-screen-inner">
+      <div class="rules-header">
+        <button class="back-btn" onclick="showScreen('home')">
+          <i class="fa-solid fa-arrow-left"></i>
+        </button>
+        <h2 class="screen-title">Spelregels</h2>
       </div>
 
-    </div><!-- /rules-content -->
+      <div class="rules-content" id="rules-content">
 
-    <!-- Knop -->
-    <div class="btn-group">
-      <button class="btn btn-primary" onclick="showScreen('home')">
-        <i class="fa-solid fa-arrow-left"></i>
-        Terug naar Home
-      </button>
+        <div class="rules-section">
+          <h3><i class="fa-solid fa-trophy"></i> Het Doel</h3>
+          <p>Word de eerste speler die <strong>10 kaarten</strong> correct in een chronologische tijdlijn heeft geplaatst.</p>
+        </div>
+
+        <div class="rules-section">
+          <h3><i class="fa-solid fa-list-check"></i> Voorbereiding</h3>
+          <ul>
+            <li>Schud de muziekkaarten en leg de stapel op tafel met de QR-codes naar boven.</li>
+            <li>Elke speler krijgt één kaart en legt deze met de <strong>jaartal-kant naar boven</strong> voor zich neer. Dit is het begin van je tijdlijn.</li>
+            <li>Elke speler krijgt <strong>2 HITSTER-tokens</strong>.</li>
+          </ul>
+        </div>
+
+        <div class="rules-section">
+          <h3><i class="fa-solid fa-gamepad"></i> Zo speel je het spel</h3>
+          <ol>
+            <li><strong>Scannen:</strong> De DJ (of de speler rechts) scant een kaart met de app.</li>
+            <li><strong>Luisteren:</strong> Het nummer begint te spelen. De speler wiens beurt het is luistert goed.</li>
+            <li><strong>Plaatsen:</strong> Leg de kaart op je tijdlijn <em>zonder</em> de jaartal-kant te bekijken. Ligt dit nummer uitgebracht vóór, na of ergens tussen je huidige kaarten?</li>
+            <li><strong>Controleren:</strong> Draai de kaart om. Klopt het jaartal?
+              <ul>
+                <li><strong>Correct:</strong> Laat de kaart liggen met het jaartal naar boven. Je bent dichter bij de winst!</li>
+                <li><strong>Fout:</strong> De kaart gaat helaas uit het spel. Je tijdlijn verandert niet.</li>
+              </ul>
+            </li>
+          </ol>
+        </div>
+
+        <div class="rules-section">
+          <h3><i class="fa-solid fa-coins"></i> HITSTER-tokens</h3>
+          <p>Gebruik je fiches strategisch:</p>
+          <ul>
+            <li><strong>Nieuw nummer:</strong> Gebruik 1 token tijdens je eigen beurt om het huidige nummer over te slaan en een nieuwe kaart te scannen.</li>
+            <li><strong>Inbreken (Hitster!):</strong> Is een tegenstander aan de beurt en denk je dat ze een kaart verkeerd gaan leggen? Roep <strong>"HITSTER!"</strong> vóórdat ze de kaart omdraaien. Leg jouw token op de juiste plek. Heb je gelijk? Dan steel je de kaart voor jouw tijdlijn!</li>
+            <li><strong>Tokens verdienen:</strong> Als je aan de beurt bent en je raadt naast de juiste plek ook de <strong>artiest</strong> én <strong>titel</strong> van het nummer, verdien je direct een token terug (maximaal 3 in bezit).</li>
+          </ul>
+        </div>
+
+        <div class="rules-section">
+          <h3><i class="fa-solid fa-star"></i> Verschillende speelrondes</h3>
+          <p>Je kunt Hitster op verschillende niveaus spelen: van <strong>Original</strong> (alleen het jaartal hoeft te kloppen) tot <strong>Expert</strong> (waarbij je ook de artiest en titel moet weten om de kaart te mogen houden).</p>
+        </div>
+
+      </div>
     </div>
+  </div>
 
-  </div><!-- /rules -->
+  <!-- Hidden audio element -->
+  <audio id="audio-player" preload="auto"></audio>
 
-
-  <!-- App JavaScript -->
   <script src="app.js"></script>
-
 </body>
 </html>

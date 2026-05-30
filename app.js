@@ -1,291 +1,343 @@
-/* ============================================
-   HITSTER PWA — APP.JS
-   Schermlogica, QR-scanner & Audio
-   ============================================ */
+/* =============================================
+   HITSTER PWA — app.js
+   QR Scanner + Audio Logic
+   ============================================= */
 
 'use strict';
 
-// === GLOBALE STATE ===
-let songsDatabase = {};
-let currentAudio = null;
-let isPlaying = false;
+// === STATE ===
 let html5QrCode = null;
-let scannerActive = false;
+let songDatabase = {};
+let audioPlayer = null;
+let isScanning = false;
+let progressInterval = null;
 
-// === DOM REFERENTIES ===
-const screens = {
-  home: document.getElementById('home'),
-  scanner: document.getElementById('scanner'),
-  playing: document.getElementById('playing'),
-  rules: document.getElementById('rules')
-};
-
-const playIcon = document.getElementById('play-icon');
-const toastEl = document.getElementById('toast');
-
-// === INITIALISATIE ===
-document.addEventListener('DOMContentLoaded', async () => {
-  // Laad songs database
-  await loadSongsDatabase();
-
-  // Registreer Service Worker
+// === INIT ===
+document.addEventListener('DOMContentLoaded', () => {
+  audioPlayer = document.getElementById('audio-player');
   registerServiceWorker();
-
-  // Verberg laadscherm
-  const overlay = document.getElementById('loading-overlay');
-  if (overlay) {
-    overlay.classList.add('fade-out');
-    setTimeout(() => overlay.remove(), 600);
-  }
+  loadSongDatabase();
+  setupAudioListeners();
+  lockOrientation();
 });
 
-// === SERVICE WORKER REGISTRATIE ===
+// === SERVICE WORKER ===
 function registerServiceWorker() {
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js')
-      .then(reg => console.log('[App] Service Worker geregistreerd:', reg.scope))
-      .catch(err => console.warn('[App] Service Worker registratie mislukt:', err));
+      .then(reg => console.log('[SW] Registered:', reg.scope))
+      .catch(err => console.warn('[SW] Registration failed:', err));
   }
 }
 
-// === SONGS DATABASE LADEN ===
-async function loadSongsDatabase() {
+// === LOCK ORIENTATION ===
+function lockOrientation() {
+  if (screen.orientation && screen.orientation.lock) {
+    screen.orientation.lock('portrait').catch(() => {
+      // Silently fail — iOS doesn't support this API, CSS overlay handles it
+    });
+  }
+}
+
+// === SONG DATABASE ===
+async function loadSongDatabase() {
   try {
     const response = await fetch('songs.json');
-    if (!response.ok) throw new Error('HTTP ' + response.status);
-    songsDatabase = await response.json();
-    console.log('[App] Songs database geladen:', Object.keys(songsDatabase).length, 'nummers');
+    if (!response.ok) throw new Error('songs.json not found');
+    songDatabase = await response.json();
+    console.log('[Hitster] Song database loaded:', Object.keys(songDatabase).length, 'songs');
   } catch (err) {
-    console.error('[App] Kon songs.json niet laden:', err);
-    showToast('Fout bij laden van nummers');
+    console.error('[Hitster] Could not load songs.json:', err);
+    songDatabase = {};
   }
 }
 
-// === SCHERM WISSELEN ===
-function showScreen(screenId) {
-  Object.values(screens).forEach(s => s.classList.add('hidden'));
-  if (screens[screenId]) {
-    screens[screenId].classList.remove('hidden');
+// === SCREEN NAVIGATION ===
+function showScreen(id) {
+  // Stop audio if leaving playing screen
+  if (id !== 'playing') {
+    pauseAudio();
+  }
+
+  // Stop scanner if leaving scanner screen
+  if (id !== 'scanner' && isScanning) {
+    stopScannerOnly();
+  }
+
+  document.querySelectorAll('.screen').forEach(screen => {
+    screen.classList.add('hidden');
+    screen.classList.remove('active');
+  });
+
+  const target = document.getElementById(id);
+  if (target) {
+    target.classList.remove('hidden');
+    target.classList.add('active');
   }
 }
 
-// === HOME SCHERM ===
-function startApp() {
-  goToScanner();
-}
-
-// === SCANNER SCHERM ===
-function goToScanner() {
+function goHome() {
   stopAudio();
-  showScreen('scanner');
-  startScanning();
+  showScreen('home');
 }
 
-async function startScanning() {
-  if (scannerActive) return;
+function goToScanner() {
+  showScreen('scanner');
+  setTimeout(() => startScanning(), 100);
+}
 
-  // Controleer of html5-qrcode library geladen is
-  if (typeof Html5Qrcode === 'undefined') {
-    showToast('QR-scanner niet beschikbaar');
-    showScreen('home');
-    return;
-  }
+// === APP START ===
+function startApp() {
+  showScreen('scanner');
+  setTimeout(() => startScanning(), 200);
+}
+
+// === QR SCANNER ===
+async function startScanning() {
+  if (isScanning) return;
+
+  const readerEl = document.getElementById('reader');
+  if (!readerEl) return;
+
+  // Clear previous instance
+  readerEl.innerHTML = '';
+
+  setScanStatus('Camera wordt gestart…');
 
   try {
     html5QrCode = new Html5Qrcode('reader');
 
-    const qrboxSize = Math.min(220, window.innerWidth - 80);
+    const config = {
+      fps: 15,
+      qrbox: { width: 220, height: 220 },
+      aspectRatio: 1.0,
+      showTorchButtonIfSupported: false,
+      showZoomSliderIfSupported: false,
+      defaultZoomValueIfSupported: 1,
+      // Disable built-in UI chrome
+      disableFlip: false,
+      rememberLastUsedCamera: true,
+    };
 
     await html5QrCode.start(
-      { facingMode: 'environment' }, // Gebruik achtercamera
-      {
-        fps: 10,
-        qrbox: { width: qrboxSize, height: qrboxSize },
-        aspectRatio: 1.0,
-        disableFlip: false,
-        formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE]
-      },
-      onScanSuccess,
-      onScanError
+      { facingMode: 'environment' },
+      config,
+      onQrSuccess,
+      onQrError
     );
 
-    scannerActive = true;
-    console.log('[App] Scanner gestart');
+    isScanning = true;
+    setScanStatus('Houd de QR-code voor de camera');
+
+    // Hide html5-qrcode default header/footer elements
+    cleanupScannerUI();
+
   } catch (err) {
-    console.error('[App] Scanner fout:', err);
+    console.error('[Scanner] Could not start:', err);
+    isScanning = false;
 
-    if (err.toString().includes('NotAllowedError') || err.toString().includes('Permission')) {
-      showToast('Camera toegang geweigerd');
+    if (err.name === 'NotAllowedError' || String(err).includes('NotAllowedError')) {
+      setScanStatus('⚠️ Cameratoegang geweigerd. Geef toestemming in je instellingen.');
+    } else if (err.name === 'NotFoundError' || String(err).includes('NotFoundError')) {
+      setScanStatus('⚠️ Geen camera gevonden op dit apparaat.');
     } else {
-      showToast('Kon camera niet starten');
+      setScanStatus('⚠️ Camera kon niet starten. Probeer opnieuw.');
     }
-    showScreen('home');
   }
 }
 
-function onScanSuccess(decodedText) {
-  console.log('[App] QR gescand:', decodedText);
+function cleanupScannerUI() {
+  // Remove extra UI elements added by html5-qrcode library
+  setTimeout(() => {
+    const reader = document.getElementById('reader');
+    if (!reader) return;
 
-  const qrKey = decodedText.trim().toLowerCase();
+    // Hide default UI elements the library adds
+    const selectors = [
+      '#reader__dashboard',
+      '#reader__dashboard_section',
+      '#reader__dashboard_section_csr',
+      '#reader__header_message',
+      '#reader__status_span',
+      '#reader__camera_selection',
+      'select',
+      'button:not(#playpause-btn):not(.btn):not(.back-btn):not(.btn-playing)',
+    ];
 
-  if (songsDatabase[qrKey]) {
-    // Haptic feedback (werkt op iOS/Android)
-    if (navigator.vibrate) navigator.vibrate(80);
-
-    stopScanning();
-    playAudio(songsDatabase[qrKey].file);
-    showScreen('playing');
-  } else {
-    // Onbekende QR-code
-    showToast('Kaart niet herkend: ' + qrKey);
-    console.warn('[App] Geen nummer gevonden voor:', qrKey);
-  }
-}
-
-function onScanError(errorMessage) {
-  // Stille fout — QR-codes worden continu gescand en fouten zijn normaal
-}
-
-function stopScanning() {
-  if (html5QrCode && scannerActive) {
-    html5QrCode.stop()
-      .then(() => {
-        html5QrCode = null;
-        scannerActive = false;
-        console.log('[App] Scanner gestopt');
-      })
-      .catch(err => {
-        console.warn('[App] Fout bij stoppen scanner:', err);
-        html5QrCode = null;
-        scannerActive = false;
+    selectors.forEach(sel => {
+      reader.querySelectorAll(sel).forEach(el => {
+        el.style.display = 'none';
+        el.style.visibility = 'hidden';
       });
-  }
+    });
+  }, 500);
 }
 
-function stopScanningAndGoHome() {
-  stopScanning();
-  stopAudio();
+function onQrSuccess(decodedText) {
+  const key = decodedText.trim().toLowerCase();
+  console.log('[Scanner] QR detected:', key);
+
+  const song = songDatabase[key];
+
+  if (!song) {
+    setScanStatus(`❓ Onbekende kaart: "${decodedText}"`);
+    // Brief vibration feedback
+    if (navigator.vibrate) navigator.vibrate(50);
+    return;
+  }
+
+  // Haptic + stop scanner
+  if (navigator.vibrate) navigator.vibrate([30, 50, 30]);
+  stopScannerOnly();
+
+  // Navigate to playing screen
+  showScreen('playing');
+  playAudio(song.file, key);
+}
+
+function onQrError(errorMessage) {
+  // Suppress continuous scan errors (normal when no QR in view)
+}
+
+async function stopScannerOnly() {
+  if (!html5QrCode) return;
+  isScanning = false;
+  try {
+    const state = html5QrCode.getState();
+    if (state === Html5QrcodeScannerState.SCANNING || state === Html5QrcodeScannerState.PAUSED) {
+      await html5QrCode.stop();
+    }
+  } catch (err) {
+    // Ignore stop errors
+  }
+  html5QrCode = null;
+}
+
+async function stopScanning() {
+  await stopScannerOnly();
   showScreen('home');
 }
 
-// === AUDIO AFSPELEN ===
-function playAudio(filePath) {
-  stopAudio();
-
-  currentAudio = new Audio(filePath);
-  currentAudio.preload = 'auto';
-
-  currentAudio.addEventListener('canplaythrough', () => {
-    currentAudio.play()
-      .then(() => {
-        isPlaying = true;
-        updatePlayIcon();
-        console.log('[App] Audio afspelen:', filePath);
-      })
-      .catch(err => {
-        console.error('[App] Afspelen mislukt:', err);
-        showToast('Kon nummer niet afspelen');
-      });
-  });
-
-  currentAudio.addEventListener('ended', () => {
-    isPlaying = false;
-    updatePlayIcon();
-  });
-
-  currentAudio.addEventListener('error', (e) => {
-    console.error('[App] Audio laad fout:', e);
-    showToast('MP3 bestand niet gevonden');
-    isPlaying = false;
-    updatePlayIcon();
-  });
-
-  currentAudio.load();
+function setScanStatus(msg) {
+  const el = document.getElementById('scan-status');
+  if (el) el.textContent = msg;
 }
 
-function togglePlayPause() {
-  if (!currentAudio) return;
+// === AUDIO ===
+function playAudio(filePath, key) {
+  stopAudio();
 
-  if (isPlaying) {
-    currentAudio.pause();
-    isPlaying = false;
-  } else {
-    currentAudio.play().catch(err => console.error('[App] Play mislukt:', err));
-    isPlaying = true;
+  const label = document.getElementById('now-playing-label');
+  if (label) label.textContent = key.toUpperCase();
+
+  audioPlayer.src = filePath;
+  audioPlayer.load();
+  audioPlayer.play().catch(err => {
+    console.error('[Audio] Playback failed:', err);
+  });
+
+  setPlayIcon('pause');
+  startProgressTracker();
+
+  // Keep GIF running
+  const gif = document.getElementById('play-visual');
+  if (gif) gif.classList.remove('paused');
+}
+
+function pauseAudio() {
+  if (!audioPlayer.paused) {
+    audioPlayer.pause();
+    setPlayIcon('play');
+    const gif = document.getElementById('play-visual');
+    if (gif) gif.classList.add('paused');
   }
-
-  updatePlayIcon();
-
-  // Haptic feedback
-  if (navigator.vibrate) navigator.vibrate(30);
 }
 
 function stopAudio() {
-  if (currentAudio) {
-    currentAudio.pause();
-    currentAudio.src = '';
-    currentAudio = null;
-  }
-  isPlaying = false;
-  updatePlayIcon();
+  clearProgressInterval();
+  audioPlayer.pause();
+  audioPlayer.src = '';
+  audioPlayer.load();
+  setPlayIcon('play');
+  setProgress(0);
+  const gif = document.getElementById('play-visual');
+  if (gif) gif.classList.add('paused');
 }
 
-function updatePlayIcon() {
-  if (!playIcon) return;
-  if (isPlaying) {
-    playIcon.classList.remove('fa-play');
-    playIcon.classList.add('fa-pause');
+function togglePlayPause() {
+  if (audioPlayer.paused) {
+    audioPlayer.play().catch(console.error);
+    setPlayIcon('pause');
+    const gif = document.getElementById('play-visual');
+    if (gif) gif.classList.remove('paused');
   } else {
-    playIcon.classList.remove('fa-pause');
-    playIcon.classList.add('fa-play');
+    pauseAudio();
   }
 }
 
-// === SPELREGELS SCHERM ===
-function showRules() {
-  showScreen('rules');
+function setPlayIcon(state) {
+  const icon = document.getElementById('play-icon');
+  if (!icon) return;
+  icon.className = state === 'pause'
+    ? 'fa-solid fa-pause'
+    : 'fa-solid fa-play';
 }
 
-function backToHome() {
-  stopAudio();
-  stopScanning();
-  showScreen('home');
+// === PROGRESS BAR ===
+function startProgressTracker() {
+  clearProgressInterval();
+  progressInterval = setInterval(() => {
+    if (!audioPlayer.duration) return;
+    const pct = (audioPlayer.currentTime / audioPlayer.duration) * 100;
+    setProgress(pct);
+    setTimeLabel('time-current', audioPlayer.currentTime);
+    setTimeLabel('time-total', audioPlayer.duration);
+  }, 500);
 }
 
-// === TOAST NOTIFICATIE ===
-let toastTimeout = null;
-
-function showToast(message) {
-  if (!toastEl) return;
-
-  toastEl.textContent = message;
-  toastEl.classList.add('show');
-
-  if (toastTimeout) clearTimeout(toastTimeout);
-  toastTimeout = setTimeout(() => {
-    toastEl.classList.remove('show');
-  }, 2800);
-}
-
-// === PREVENTIEF: voorkom zoom op iOS ===
-document.addEventListener('gesturestart', e => e.preventDefault());
-document.addEventListener('gesturechange', e => e.preventDefault());
-document.addEventListener('gestureend', e => e.preventDefault());
-
-// Dubbelklik zoom voorkomen
-let lastTouchEnd = 0;
-document.addEventListener('touchend', e => {
-  const now = Date.now();
-  if (now - lastTouchEnd <= 300) {
-    e.preventDefault();
+function clearProgressInterval() {
+  if (progressInterval) {
+    clearInterval(progressInterval);
+    progressInterval = null;
   }
-  lastTouchEnd = now;
-}, false);
+}
 
-// === AUDIO SESSIE (iOS achtergrond audio) ===
-document.addEventListener('visibilitychange', () => {
-  if (document.hidden) {
-    // App gaat naar achtergrond — audio gaat door
-    console.log('[App] App naar achtergrond');
-  }
-});
+function setProgress(pct) {
+  const fill = document.getElementById('progress-fill');
+  if (fill) fill.style.width = pct + '%';
+}
+
+function setTimeLabel(id, seconds) {
+  const el = document.getElementById(id);
+  if (!el || isNaN(seconds)) return;
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60).toString().padStart(2, '0');
+  el.textContent = `${m}:${s}`;
+}
+
+// === AUDIO EVENT LISTENERS ===
+function setupAudioListeners() {
+  audioPlayer.addEventListener('ended', () => {
+    clearProgressInterval();
+    setPlayIcon('play');
+    setProgress(100);
+    const gif = document.getElementById('play-visual');
+    if (gif) gif.classList.add('paused');
+  });
+
+  audioPlayer.addEventListener('play', () => {
+    setPlayIcon('pause');
+    startProgressTracker();
+  });
+
+  audioPlayer.addEventListener('pause', () => {
+    setPlayIcon('play');
+    clearProgressInterval();
+  });
+
+  audioPlayer.addEventListener('error', (e) => {
+    console.error('[Audio] Error loading file:', e);
+    const label = document.getElementById('now-playing-label');
+    if (label) label.textContent = '⚠️ Bestand niet gevonden';
+  });
+}
