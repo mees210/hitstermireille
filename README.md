@@ -13,8 +13,8 @@ Hitster-App/
 ├── assets/
 │   ├── homelogo.png       ← jouw ronde logo/foto voor het startscherm
 │   ├── afspeelcirkel.gif  ← geanimeerde cirkel achter de play-knop
-│   ├── icon-192.png       ← app-icoon 192×192 px
-│   └── icon-512.png       ← app-icoon 512×512 px
+│   ├── icon-192.jpg       ← app-icoon 192×192 px
+│   └── icon-512.jpg       ← app-icoon 512×512 px
 └── songs/
     ├── skyfall.mp3
     ├── flowers.mp3

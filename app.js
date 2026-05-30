@@ -137,11 +137,11 @@ async function startScanning() {
     isScanning = false;
 
     if (err.name === 'NotAllowedError' || String(err).includes('NotAllowedError')) {
-      setScanStatus('⚠️ Cameratoegang geweigerd. Geef toestemming in je instellingen.');
+      setScanStatus('Cameratoegang geweigerd. Geef toestemming in je instellingen.');
     } else if (err.name === 'NotFoundError' || String(err).includes('NotFoundError')) {
-      setScanStatus('⚠️ Geen camera gevonden op dit apparaat.');
+      setScanStatus('Geen camera gevonden op dit apparaat.');
     } else {
-      setScanStatus('⚠️ Camera kon niet starten. Probeer opnieuw.');
+      setScanStatus('Camera kon niet starten. Probeer opnieuw.');
     }
   }
 }
@@ -180,7 +180,7 @@ function onQrSuccess(decodedText) {
   const song = songDatabase[key];
 
   if (!song) {
-    setScanStatus(`❓ Onbekende kaart: "${decodedText}"`);
+    setScanStatus(`Onbekende kaart: "${decodedText}"`);
     // Brief vibration feedback
     if (navigator.vibrate) navigator.vibrate(50);
     return;
@@ -338,6 +338,6 @@ function setupAudioListeners() {
   audioPlayer.addEventListener('error', (e) => {
     console.error('[Audio] Error loading file:', e);
     const label = document.getElementById('now-playing-label');
-    if (label) label.textContent = '⚠️ Bestand niet gevonden';
+    if (label) label.textContent = 'Bestand niet gevonden';
   });
 }

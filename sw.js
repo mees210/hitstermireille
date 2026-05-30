@@ -15,8 +15,8 @@ const CORE_ASSETS = [
   'manifest.json',
   'assets/homelogo.png',
   'assets/afspeelcirkel.gif',
-  'assets/icon-192.png',
-  'assets/icon-512.png',
+  'assets/icon-192.jpg',
+  'assets/icon-512.jpg',
 ];
 
 // External resources to cache on first use
