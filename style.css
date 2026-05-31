@@ -642,7 +642,7 @@ strong { color: var(--cyan); }
   background: linear-gradient(-45deg, #000000, #1a001f, #0a0033, #000000);
   background-size: 400% 400%;
   animation: bg-shift 12s ease infinite;
-  overflow-y: auto;
+  overflow-y: hidden;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
   /* Scanline effect consistent met de rest van de app */
