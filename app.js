@@ -15,11 +15,113 @@ let progressInterval = null;
 // === INIT ===
 document.addEventListener('DOMContentLoaded', () => {
   audioPlayer = document.getElementById('audio-player');
+  checkIOSInstall();   // ← eerste check, blokkeert de rest als nodig
   registerServiceWorker();
   loadSongDatabase();
   setupAudioListeners();
   lockOrientation();
 });
+
+// =============================================
+// iOS INSTALLATIE DETECTIE
+// Toont de install-overlay op iOS Safari als
+// de app NIET als standalone PWA geopend is.
+// =============================================
+
+function checkIOSInstall() {
+  // 1. Detecteer iOS / iPadOS
+  //    navigator.standalone bestaat alleen op iOS Safari
+  //    iPad met iPadOS 13+ rapporteert zichzelf als MacIntel,
+  //    maar heeft wel ontouchend — vandaar de dubbele check.
+  const isIOS =
+    /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+  if (!isIOS) return; // Niet iOS → niets doen
+
+  // 2. Detecteer standalone mode
+  //    navigator.standalone = true  →  geïnstalleerde PWA (iOS Safari)
+  //    display-mode: standalone      →  geïnstalleerde PWA (moderne browsers)
+  const isStandalone =
+    ('standalone' in navigator && navigator.standalone === true) ||
+    window.matchMedia('(display-mode: standalone)').matches ||
+    window.matchMedia('(display-mode: fullscreen)').matches;
+
+  if (isStandalone) return; // Al als PWA geopend → niets doen
+
+  // 3. Toon overlay en blokkeer de rest van de app
+  showIOSOverlay();
+}
+
+function showIOSOverlay() {
+  const overlay = document.getElementById('ios-install-overlay');
+  if (!overlay) return;
+
+  // Maak overlay zichtbaar
+  overlay.style.display = 'block';
+
+  // Blokkeer scrollen op de body (de overlay heeft eigen scroll)
+  document.body.style.overflow = 'hidden';
+  document.body.style.position = 'fixed';
+  document.body.style.width = '100%';
+
+  // Blokkeer alle pointer-events op de app-schermen
+  document.querySelectorAll('.screen, #rotate-overlay').forEach(el => {
+    el.style.pointerEvents = 'none';
+    el.setAttribute('aria-hidden', 'true');
+  });
+
+  // Overlay is zelf toegankelijk
+  overlay.setAttribute('aria-hidden', 'false');
+
+  // Voorkom dat touchmove buiten de overlay scrolt
+  document.addEventListener('touchmove', preventBodyScroll, { passive: false });
+
+  // Herlaadfunctie: verberg overlay als app opnieuw geactiveerd wordt als standalone
+  // (gebruiker heeft geïnstalleerd en opent nu via beginscherm)
+  document.addEventListener('visibilitychange', recheckOnResume);
+  window.addEventListener('focus', recheckOnResume);
+}
+
+function preventBodyScroll(e) {
+  // Sta scrollen toe binnen de overlay zelf
+  const overlay = document.getElementById('ios-install-overlay');
+  if (overlay && overlay.contains(e.target)) return;
+  e.preventDefault();
+}
+
+function recheckOnResume() {
+  const isStandalone =
+    ('standalone' in navigator && navigator.standalone === true) ||
+    window.matchMedia('(display-mode: standalone)').matches ||
+    window.matchMedia('(display-mode: fullscreen)').matches;
+
+  if (isStandalone) {
+    hideIOSOverlay();
+  }
+}
+
+function hideIOSOverlay() {
+  const overlay = document.getElementById('ios-install-overlay');
+  if (overlay) {
+    overlay.style.display = 'none';
+    overlay.setAttribute('aria-hidden', 'true');
+  }
+
+  document.body.style.overflow = '';
+  document.body.style.position = '';
+  document.body.style.width = '';
+
+  document.querySelectorAll('.screen, #rotate-overlay').forEach(el => {
+    el.style.pointerEvents = '';
+    el.removeAttribute('aria-hidden');
+  });
+
+  document.removeEventListener('touchmove', preventBodyScroll);
+  document.removeEventListener('visibilitychange', recheckOnResume);
+  window.removeEventListener('focus', recheckOnResume);
+}
+
 
 // === SERVICE WORKER ===
 function registerServiceWorker() {

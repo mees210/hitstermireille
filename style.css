@@ -629,3 +629,370 @@ body::before {
 
 /* === MISC UTILITIES === */
 strong { color: var(--cyan); }
+
+/* =============================================
+   iOS INSTALLATIE OVERLAY
+   ============================================= */
+
+#ios-install-overlay {
+  display: none; /* JS toont dit alleen op iOS buiten standalone */
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: linear-gradient(-45deg, #000000, #1a001f, #0a0033, #000000);
+  background-size: 400% 400%;
+  animation: bg-shift 12s ease infinite;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  /* Scanline effect consistent met de rest van de app */
+  isolation: isolate;
+}
+
+#ios-install-overlay::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.07) 2px,
+    rgba(0, 0, 0, 0.07) 4px
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Zwevende achtergrond-particles */
+.ios-bg-particles {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 0;
+}
+
+.ios-bg-particles span {
+  position: absolute;
+  display: block;
+  border-radius: 50%;
+  animation: ios-float linear infinite;
+  opacity: 0;
+}
+
+.ios-bg-particles span:nth-child(1) {
+  width: 200px; height: 200px;
+  left: -60px; top: 10%;
+  background: radial-gradient(circle, rgba(255,0,204,0.12) 0%, transparent 70%);
+  animation-duration: 18s; animation-delay: 0s;
+}
+.ios-bg-particles span:nth-child(2) {
+  width: 280px; height: 280px;
+  right: -80px; top: 30%;
+  background: radial-gradient(circle, rgba(0,242,255,0.1) 0%, transparent 70%);
+  animation-duration: 22s; animation-delay: -6s;
+}
+.ios-bg-particles span:nth-child(3) {
+  width: 160px; height: 160px;
+  left: 20%; bottom: 15%;
+  background: radial-gradient(circle, rgba(255,0,204,0.1) 0%, transparent 70%);
+  animation-duration: 15s; animation-delay: -3s;
+}
+.ios-bg-particles span:nth-child(4) {
+  width: 120px; height: 120px;
+  right: 15%; bottom: 30%;
+  background: radial-gradient(circle, rgba(0,242,255,0.08) 0%, transparent 70%);
+  animation-duration: 20s; animation-delay: -10s;
+}
+.ios-bg-particles span:nth-child(5) {
+  width: 90px; height: 90px;
+  left: 50%; top: 5%;
+  background: radial-gradient(circle, rgba(255,0,204,0.15) 0%, transparent 70%);
+  animation-duration: 14s; animation-delay: -4s;
+}
+.ios-bg-particles span:nth-child(6) {
+  width: 180px; height: 180px;
+  right: 30%; top: 60%;
+  background: radial-gradient(circle, rgba(0,242,255,0.07) 0%, transparent 70%);
+  animation-duration: 25s; animation-delay: -8s;
+}
+
+@keyframes ios-float {
+  0%   { transform: translateY(30px) scale(0.9); opacity: 0; }
+  15%  { opacity: 1; }
+  85%  { opacity: 1; }
+  100% { transform: translateY(-30px) scale(1.1); opacity: 0; }
+}
+
+/* Hoofd-card */
+.ios-card {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  min-height: 100%;
+  padding: max(env(safe-area-inset-top), 52px) 24px max(env(safe-area-inset-bottom), 100px);
+  gap: 0;
+}
+
+/* Header: icoon + titel */
+.ios-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 32px;
+  text-align: center;
+}
+
+.ios-app-icon {
+  width: 88px;
+  height: 88px;
+  border-radius: 22px;
+  overflow: hidden;
+  border: 2px solid var(--primary);
+  box-shadow: var(--primary-glow);
+  position: relative;
+  flex-shrink: 0;
+}
+
+.ios-app-icon::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, transparent 35%, rgba(255,255,255,0.18) 50%, transparent 65%);
+  background-size: 200% 200%;
+  animation: shine-sweep 3.5s ease-in-out infinite;
+}
+
+.ios-app-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.ios-title {
+  font-family: var(--font-head);
+  font-size: 64px;
+  line-height: 1;
+  color: var(--primary);
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  animation: glow-text 2.5s ease-in-out infinite alternate;
+  text-shadow: var(--primary-glow);
+}
+
+.ios-subtitle {
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--soft);
+  line-height: 1.55;
+  max-width: 280px;
+}
+
+/* Stappen container */
+.ios-steps {
+  width: 100%;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 20px;
+  overflow: hidden;
+  margin-bottom: 28px;
+}
+
+/* Stap rij */
+.ios-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 18px 20px;
+}
+
+.ios-step-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.07);
+  margin: 0 16px;
+}
+
+/* Stap nummers */
+.ios-step-num {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ff00cc, #cc00aa);
+  box-shadow: 0 0 12px rgba(255,0,204,0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-head);
+  font-size: 18px;
+  color: #fff;
+  letter-spacing: 0;
+  margin-top: 1px;
+}
+
+.ios-step-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ios-step-label {
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--soft);
+  line-height: 1.4;
+}
+
+.ios-step-label strong {
+  color: var(--cyan);
+  font-weight: 700;
+}
+
+/* iOS Deel-icoon preview (stap 1) */
+.ios-share-icon-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(0, 242, 255, 0.07);
+  border: 1px solid rgba(0, 242, 255, 0.2);
+  border-radius: 10px;
+  padding: 8px 12px;
+}
+
+.ios-share-svg {
+  width: 26px;
+  height: 26px;
+  color: var(--cyan);
+  flex-shrink: 0;
+  filter: drop-shadow(0 0 6px rgba(0,242,255,0.5));
+}
+
+.ios-share-label {
+  font-size: 12px;
+  color: var(--muted);
+  font-family: var(--font-body);
+}
+
+/* "Zet op beginscherm" preview (stap 2) */
+.ios-add-preview {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 8px 12px;
+}
+
+.ios-add-icon {
+  width: 24px;
+  height: 24px;
+  color: var(--primary);
+  flex-shrink: 0;
+  filter: drop-shadow(0 0 5px rgba(255,0,204,0.5));
+}
+
+.ios-add-preview span {
+  font-size: 12px;
+  color: var(--muted);
+  font-family: var(--font-body);
+}
+
+/* Home-scherm preview (stap 3) */
+.ios-home-preview {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 8px 12px;
+}
+
+.ios-fake-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  background: linear-gradient(135deg, #ff00cc, #cc00aa);
+  box-shadow: 0 0 10px rgba(255,0,204,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-head);
+  font-size: 20px;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.ios-home-preview span {
+  font-size: 12px;
+  color: var(--muted);
+  font-family: var(--font-body);
+}
+
+/* Pijl onderaan → wijst naar de Safari werkbalk */
+.ios-arrow-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  max-width: 360px;
+}
+
+.ios-arrow-label {
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--muted);
+  letter-spacing: 0.3px;
+}
+
+.ios-arrow-bounce {
+  color: var(--primary);
+  filter: drop-shadow(0 0 8px rgba(255,0,204,0.7));
+  animation: ios-arrow-bounce 1.4s ease-in-out infinite;
+}
+
+.ios-arrow-bounce svg {
+  width: 32px;
+  height: 32px;
+}
+
+@keyframes ios-arrow-bounce {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(6px); }
+}
+
+/* Pill met deelicoon */
+.ios-share-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 22px;
+  border-radius: 50px;
+  background: linear-gradient(135deg, #ff00cc, #cc00aa);
+  box-shadow: 0 4px 20px rgba(255,0,204,0.4), 0 0 0 1px rgba(255,0,204,0.3);
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.ios-share-pill svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}

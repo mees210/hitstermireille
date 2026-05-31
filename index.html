@@ -12,8 +12,8 @@
   <title>Hitster</title>
 
   <link rel="manifest" href="manifest.json" />
-  <link rel="apple-touch-icon" href="assets/icon-192.jpg" />
-  <link rel="icon" type="image/png" sizes="192x192" href="assets/icon-192.jpg" />
+  <link rel="apple-touch-icon" href="assets/icon-192.png" />
+  <link rel="icon" type="image/png" sizes="192x192" href="assets/icon-192.png" />
 
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -29,6 +29,94 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+
+  <!-- iOS Installatie-overlay (alleen zichtbaar op iOS Safari buiten standalone) -->
+  <div id="ios-install-overlay" aria-modal="true" role="dialog" aria-label="Installeer Hitster">
+
+    <div class="ios-bg-particles">
+      <span></span><span></span><span></span>
+      <span></span><span></span><span></span>
+    </div>
+
+    <div class="ios-card">
+
+      <!-- Logo + titel -->
+      <div class="ios-header">
+        <div class="ios-app-icon">
+          <img src="assets/icon-192.png" alt="Hitster icoon" />
+        </div>
+        <h1 class="ios-title">Hitster</h1>
+        <p class="ios-subtitle">Installeer de app op je beginscherm<br />voor de beste spelervaring</p>
+      </div>
+
+      <!-- Stappen -->
+      <div class="ios-steps">
+
+        <div class="ios-step">
+          <div class="ios-step-num">1</div>
+          <div class="ios-step-body">
+            <p class="ios-step-label">Tik op de <strong>Deel-knop</strong></p>
+            <div class="ios-share-icon-wrap">
+              <!-- Inline SVG: het exacte iOS-deelicoon -->
+              <svg class="ios-share-svg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2L8 6h3v8h2V6h3L12 2Z" fill="currentColor"/>
+                <path d="M5 10v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V10a1 1 0 0 0-1-1h-3v2h2v8H7v-8h2V9H6a1 1 0 0 0-1 1Z" fill="currentColor"/>
+              </svg>
+              <span class="ios-share-label">onderaan in Safari</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="ios-step-divider"></div>
+
+        <div class="ios-step">
+          <div class="ios-step-num">2</div>
+          <div class="ios-step-body">
+            <p class="ios-step-label">Kies <strong>"Zet op beginscherm"</strong></p>
+            <div class="ios-add-preview">
+              <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" class="ios-add-icon">
+                <rect x="1" y="1" width="18" height="18" rx="4" stroke="currentColor" stroke-width="1.5"/>
+                <path d="M10 6v8M6 10h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+              </svg>
+              <span>Scroll omlaag als je het niet ziet</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="ios-step-divider"></div>
+
+        <div class="ios-step">
+          <div class="ios-step-num">3</div>
+          <div class="ios-step-body">
+            <p class="ios-step-label">Open <strong>Hitster</strong> vanaf je beginscherm</p>
+            <div class="ios-home-preview">
+              <div class="ios-fake-icon">H</div>
+              <span>Hitster staat nu tussen je apps</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Pulserende pijl naar de Safari werkbalk -->
+      <div class="ios-arrow-wrap">
+        <div class="ios-arrow-label">Tik hieronder op</div>
+        <div class="ios-arrow-bounce">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 4v12M6 13l6 7 6-7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="ios-share-pill">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2L8 6h3v8h2V6h3L12 2Z" fill="currentColor"/>
+            <path d="M5 10v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V10a1 1 0 0 0-1-1h-3v2h2v8H7v-8h2V9H6a1 1 0 0 0-1 1Z" fill="currentColor"/>
+          </svg>
+          Deel-knop
+        </div>
+      </div>
+
+    </div>
+  </div>
 
   <!-- Rotatie-overlay -->
   <div id="rotate-overlay">
