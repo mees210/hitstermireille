@@ -805,7 +805,7 @@ strong { color: var(--cyan); }
   border: 1px solid rgba(255, 255, 255, 0.09);
   border-radius: 20px;
   overflow: hidden;
-  margin-bottom: 28px;
+  margin-bottom: 0;
 }
 
 /* Stap rij */
@@ -939,60 +939,4 @@ strong { color: var(--cyan); }
   font-size: 12px;
   color: var(--muted);
   font-family: var(--font-body);
-}
-
-/* Pijl onderaan → wijst naar de Safari werkbalk */
-.ios-arrow-wrap {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  width: 100%;
-  max-width: 360px;
-}
-
-.ios-arrow-label {
-  font-family: var(--font-body);
-  font-size: 12px;
-  color: var(--muted);
-  letter-spacing: 0.3px;
-}
-
-.ios-arrow-bounce {
-  color: var(--primary);
-  filter: drop-shadow(0 0 8px rgba(255,0,204,0.7));
-  animation: ios-arrow-bounce 1.4s ease-in-out infinite;
-}
-
-.ios-arrow-bounce svg {
-  width: 32px;
-  height: 32px;
-}
-
-@keyframes ios-arrow-bounce {
-  0%, 100% { transform: translateY(0); }
-  50%       { transform: translateY(6px); }
-}
-
-/* Pill met deelicoon */
-.ios-share-pill {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 22px;
-  border-radius: 50px;
-  background: linear-gradient(135deg, #ff00cc, #cc00aa);
-  box-shadow: 0 4px 20px rgba(255,0,204,0.4), 0 0 0 1px rgba(255,0,204,0.3);
-  font-family: var(--font-body);
-  font-size: 14px;
-  font-weight: 700;
-  color: #fff;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.ios-share-pill svg {
-  width: 18px;
-  height: 18px;
-  flex-shrink: 0;
 }
